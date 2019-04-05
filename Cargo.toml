@@ -1,0 +1,13 @@
+[package]
+name = "yaml2yaml"
+version = "0.1.0"
+authors = ["a3r <arrrght@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+env_logger = "0.6"
+clap = "2.32"
+yaml-rust = "0.4.3"
+#serde = "1.0"
+#serde_yaml = "0.8"
+linked-hash-map = "0.5"
