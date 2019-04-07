@@ -7,7 +7,7 @@ accounts:
     - user3: pass3 
     - user4: pass4 
 
-  default: *template1
+  default: *worked
 
 templates:
   template1: &template1
