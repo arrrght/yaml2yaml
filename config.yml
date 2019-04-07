@@ -11,9 +11,8 @@ accounts:
 
 templates:
   template1: &template1
-    - { name: "login_eaisto_mileage", to: *worked, method: random, part: 0 }
-    - { name: "/services/*/environment/login_eaisto_mileage", to: *worked, method: roulette, part: 0 }
-    - { name: "/services/*/environment/password_eaisto_mileage", to: *worked, method: random, part: 1 }
+    - { name: "/services/*/environment/login_mindoo_mileage", to: *worked, method: roulette, part: 0 }
+    - { name: "/services/*/environment/password_mindoo_mileage", to: *worked, method: random, part: 1 }
     - { name: var, to: val, method: single }
     - { name: some, to: *worked, method: roulette }
 
