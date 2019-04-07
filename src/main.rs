@@ -1,6 +1,7 @@
 use clap::{value_t, App};
 use linked_hash_map::LinkedHashMap;
-use std::fs::read_to_string;
+use std::fs::{read_to_string, File};
+use std::io::prelude::*;
 use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
 
 #[derive(Debug, Clone)]
@@ -24,17 +25,20 @@ fn main() {
     };
 
     let f_str = read_to_string(opt.file).unwrap();
-    //let deserialized_map = serde_yaml::from_str(&f_str).expect("serde");
 
-    //println!("{:?}", deserialized_map);
     let docker_config = YamlLoader::load_from_str(&f_str).unwrap();
-    let docker_c = docker_config[0].clone();
+    let mut docker_c = docker_config[0].clone();
     //let mut doc = docker_config[0].as_hash().unwrap().clone();
 
     // worked
     //*doc.get_mut(&Yaml::String("version".to_string())).unwrap() = Yaml::String("ASASDASD".to_string());
 
-    walk_node(&docker_c, Vec::new(), 0);
+    walk_node(&mut docker_c, Vec::new());
+    let mut out_str = String::new();
+    let mut emitter = YamlEmitter::new(&mut out_str);
+    emitter.dump(&docker_c).unwrap();
+    let mut file = File::create("out.yml").unwrap();
+    file.write_all(&out_str.as_bytes()).unwrap();
 }
 
 fn compare_node(cmp1: &Vec<&str>, cmp2: &Vec<String>, now: Option<String>) -> bool {
@@ -62,41 +66,31 @@ fn compare_node(cmp1: &Vec<&str>, cmp2: &Vec<String>, now: Option<String>) -> bo
     true
 }
 
-fn walk_node(doc: &yaml::Yaml, path: Vec<String>, indent: usize) {
+fn walk_node(doc: &mut yaml::Yaml, path: Vec<String>) {
     let sample: Vec<&str> = "services/*/environment/cicle_history_host".split("/").collect();
     match doc {
-        yaml::Yaml::Array(ref v) => {
+        yaml::Yaml::Array(ref mut v) => {
             for x in v {
                 //compare_node(&sample, &path, x.to_owned().into_string());
                 let mut path = path.clone();
                 path.push(x.clone().into_string().unwrap());
-                walk_node(x, path, indent + 1);
+                walk_node(&mut *x, path);
             }
         }
-        yaml::Yaml::Hash(ref h) => {
-            for (k, v) in h {
+        yaml::Yaml::Hash(ref mut h) => {
+            for (k, v) in h.iter_mut() {
                 match compare_node(&sample, &path, k.to_owned().into_string()) {
                     true => {
-                        // TODO
-                        // let docker_config = YamlLoader::load_from_str(&f_str).unwrap();
-                        // let docker_c = docker_config[0].clone();
-                        // let mut doc = docker_config[0].as_hash().unwrap().clone();
-                        // *doc.get_mut(&Yaml::String("version".to_string())).unwrap() = Yaml::String("ASASDASD".to_string());
-                    },
-                    false => ()
+                        //println!("IN: {:?} - {:?}", k, v);
+                        *v = Yaml::String("YESLIUKANG".to_string());
+                    }
+                    false => (),
                 }
                 let mut path = path.clone();
                 path.push(k.clone().into_string().unwrap());
-                walk_node(v, path, indent + 1);
+                walk_node(v, path);
             }
         }
-        _ => {
-            //match compare_node(&sample, &path, None) {
-            //    true => {
-            //        //println!("{} {:?}:: {:?} = {:?} {:?}", indent, compare_node(&sample, &path), sample.join("/"), path.join("/"), doc);
-            //    }
-            //    false => (),
-            //}
-        }
+        _ => {}
     }
 }

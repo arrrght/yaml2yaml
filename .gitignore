@@ -1,3 +1,4 @@
+out.yml
 *.swp
 /target
 **/*.rs.bk
