@@ -9,11 +9,16 @@ accounts:
 
   default: *worked
 
+sample: &sample
+  - user1: pass1
+  - user2: YES-LIU-KANG
+
 templates:
   template1: &template1
-    - { name: "/services/*/environment/login_mindoo_mileage", to: *worked, method: roulette, part: 0 }
-    - { name: "/services/*/environment/password_mindoo_mileage", to: *worked, method: random, part: 1 }
-    - { name: var, to: val, method: single }
-    - { name: some, to: *worked, method: roulette }
+    - { name: "services/*/environment/login_mindoo_mileage", to: *sample, method: roulette, part: key }
+    - { name: "services/*/environment/password_mindoo_mileage", to: *sample, method: roulette, part: val }
+    #- { name: "services/*/environment/password_mindoo_mileage", to: *worked, method: random, part: val }
+    #- { name: "test-var", to: val, method: single }
+    #- { name: "test-some", to: *worked, method: roulette }
 
-  default: *template1
+default: *template1
