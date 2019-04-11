@@ -12,6 +12,7 @@ accounts:
 sample: &sample
   - user1: pass1
   - user2: YES-LIU-KANG
+  - user3: a
 
 templates:
   template1: &template1

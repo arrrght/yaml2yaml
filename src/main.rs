@@ -10,6 +10,7 @@ struct Opt {
     file: String,
 }
 
+#[derive(Debug)]
 struct Do {
     config: Vec<Yaml>
 }
@@ -81,16 +82,35 @@ fn compare_arr(cmp1: &Vec<String>, cmp2: &Vec<&str>) -> bool {
     true
 }
 fn compare_node2(path: Vec<String>, config: &mut Do) -> Option<Yaml> {
+    println!("H {:?}", config);
     //println!("AAA {:?}, {:?}", path, config.config);
-    for item in &config.config {
-        let h_name = item.as_hash().unwrap();
+    for ref mut item in &config.config {
+        let h_name = &item.as_hash().unwrap().clone();
         let s_name:String = h_name.get(&Yaml::String("name".to_string())).unwrap().as_str().unwrap().to_string();
         let s_arr: Vec<&str> = s_name.split("/").collect();
-        let res = compare_arr(&path, &s_arr);
-        if res {
-            //println!("{} XX: {:?} :: {:?}", res, s_name, path.join("/"));
-            let val = h_name.get(&Yaml::String("to".to_string())).unwrap().clone();
-            return Some(val);
+        if compare_arr(&path, &s_arr) {
+            let val = h_name.get(&Yaml::String("to".to_string())).unwrap();
+            let method = h_name.get(&Yaml::String("method".to_string())).unwrap().clone();
+            let ref mut to = h_name.get(&Yaml::String("to".to_string())).unwrap();
+            let mut a2 = to.clone();
+            let mut a3 = a2.as_vec().unwrap().clone();
+            let pop = a3.pop().unwrap();
+            a3.reverse();
+            a3.push(pop.clone());
+            a3.reverse();
+            let ya3 = Yaml::Array(a3);
+            //*to = &ya3;
+            *item = &ya3;
+            println!("H {:?}", to);
+
+            //*item = &Yaml::String("ASDASD".to_string());
+            if method.as_str() == Some("roulette") {
+                //println!("M {:?}", to);
+                *to = &val.clone();
+                return Some(method);
+            }
+            //println!("method: {:?}", method);
+            return Some(val.clone());
         }
     }
     None
