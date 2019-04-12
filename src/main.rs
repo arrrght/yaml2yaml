@@ -2,6 +2,7 @@ use clap::{value_t, App};
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 struct Opt {
@@ -12,7 +13,38 @@ struct Opt {
 
 #[derive(Debug)]
 struct Do {
-    config: Vec<Yaml>
+    config: Vec<Yaml>,
+    wk: HashMap<String, Vec<Yaml>>
+}
+
+impl Do {
+    fn roulette(&mut self, v: String) -> Yaml {
+        let arr = self.wk.get_mut(&v).unwrap();
+        let some = arr.pop().unwrap();
+        arr.reverse();
+        arr.push(some.clone());
+        arr.reverse();
+        some
+    }
+    fn init(config_file_name: &str) -> Do {
+        let f_cnf = read_to_string(config_file_name).unwrap();
+        let cnf = YamlLoader::load_from_str(&f_cnf).unwrap();
+        let doc0 = cnf[0]["default"].as_vec().unwrap().to_vec();
+
+        let mut wk: HashMap<String, Vec<Yaml>> = HashMap::new();
+        for i in doc0.clone() {
+            let hash = i.as_hash().unwrap();
+            let name = hash.get(&Yaml::from_str("name")).unwrap().as_str().unwrap();
+            let v = hash.get(&Yaml::from_str("to")).unwrap().as_vec().unwrap().to_vec();
+            println!("Init: {:?}", v);
+            wk.insert(name.to_owned(), v.clone());
+        }
+
+        Do {
+            config: doc0,
+            wk: wk
+        }
+    }
 }
 
 fn main() {
@@ -28,37 +60,14 @@ fn main() {
         file: value_t!(matches, "file", String).unwrap_or("./docker-compose.yml".to_string()),
     };
 
-    let mut config = Do {
-        config: {
-            let f_cnf = read_to_string(opt.config.clone()).unwrap();
-            let cnf = YamlLoader::load_from_str(&f_cnf).unwrap();
-            let doc = &cnf[0];
-            doc["default"].as_vec().unwrap().to_vec()
-        }
-    };
-
+    let mut config = Do::init(&opt.config);
 
     let f_str = read_to_string(opt.file).unwrap();
     let docker_config = YamlLoader::load_from_str(&f_str).unwrap();
     let mut docker_c = docker_config[0].clone();
 
-//    let f_cnf = read_to_string(opt.config).unwrap();
-//    let cnf = YamlLoader::load_from_str(&f_cnf).unwrap();
-//    let doc = &cnf[0];
-//    let def = doc["default"].as_vec().unwrap();
-
     walk_node(&mut docker_c, Vec::new(), &mut config);
 
-//    for item in def {
-//        let h_name = item.as_hash().unwrap();
-//        let s_name = h_name.get(&Yaml::String("name".to_string())).unwrap().as_str().unwrap();
-//        //let val = h_name.get(&Yaml::String("to".to_string())).unwrap();
-//        //println!("walking into {:?}::{:?}", s_name, &val);
-//        let sample: Vec<&str> = s_name.split("/").collect();
-//        walk_node(&mut docker_c, Vec::new(), &sample, &item);
-//    }
-
-    //let sample: Vec<&str> = "services/*/environment/cicle_history_host".split("/").collect();
     let mut out_str = String::new();
     let mut emitter = YamlEmitter::new(&mut out_str);
     emitter.dump(&docker_c).unwrap();
@@ -78,38 +87,27 @@ fn compare_arr(cmp1: &Vec<String>, cmp2: &Vec<&str>) -> bool {
             _ => (),
         }
     }
-   // println!("{:?} = {:?}", cmp1.join("/"), cmp2.join("/"));
     true
 }
-fn compare_node2(path: Vec<String>, config: &mut Do) -> Option<Yaml> {
-    println!("H {:?}", config);
-    //println!("AAA {:?}, {:?}", path, config.config);
+fn compare_node(path: Vec<String>, config: &mut Do) -> Option<Yaml> {
     for ref mut item in &config.config {
         let h_name = &item.as_hash().unwrap().clone();
         let s_name:String = h_name.get(&Yaml::String("name".to_string())).unwrap().as_str().unwrap().to_string();
         let s_arr: Vec<&str> = s_name.split("/").collect();
         if compare_arr(&path, &s_arr) {
-            let val = h_name.get(&Yaml::String("to".to_string())).unwrap();
+            let val = config.roulette(s_name);
             let method = h_name.get(&Yaml::String("method".to_string())).unwrap().clone();
-            let ref mut to = h_name.get(&Yaml::String("to".to_string())).unwrap();
-            let mut a2 = to.clone();
-            let mut a3 = a2.as_vec().unwrap().clone();
-            let pop = a3.pop().unwrap();
-            a3.reverse();
-            a3.push(pop.clone());
-            a3.reverse();
-            let ya3 = Yaml::Array(a3);
-            //*to = &ya3;
-            *item = &ya3;
-            println!("H {:?}", to);
 
-            //*item = &Yaml::String("ASDASD".to_string());
             if method.as_str() == Some("roulette") {
-                //println!("M {:?}", to);
-                *to = &val.clone();
-                return Some(method);
+                let part = h_name.get(&Yaml::from_str("part")).unwrap().as_str().unwrap();
+                let mut h = val.as_hash().unwrap().clone();
+                let first = h.entries().next().unwrap();
+                let ret = match part {
+                    "key" => first.key(),
+                    _ => first.get()
+                };
+                return Some(ret.clone());
             }
-            //println!("method: {:?}", method);
             return Some(val.clone());
         }
     }
@@ -117,11 +115,9 @@ fn compare_node2(path: Vec<String>, config: &mut Do) -> Option<Yaml> {
 }
 
 fn walk_node(doc: &mut yaml::Yaml, path: Vec<String>, config: &mut Do) {
-    //let sample: Vec<&str> = "services/*/environment/cicle_history_host".split("/").collect();
     match doc {
         Yaml::Array(ref mut v) => {
             for x in v {
-                //compare_node(&sample, &path, x.to_owned().into_string());
                 let mut path = path.clone();
                 match x.clone() {
                     Yaml::String(s) => path.push(s.to_string()),
@@ -129,7 +125,6 @@ fn walk_node(doc: &mut yaml::Yaml, path: Vec<String>, config: &mut Do) {
                     Yaml::Hash(_) => path.push("#".to_string()),
                     some => println!("F>U>C>K {:?}",some)
                 }
-                //path.push(x.to_string());
                 walk_node(&mut *x, path, config);
             }
         }
@@ -138,7 +133,7 @@ fn walk_node(doc: &mut yaml::Yaml, path: Vec<String>, config: &mut Do) {
                 let mut path2 = path.clone();
                 let last = k.to_owned().into_string().unwrap();
                 path2.push(last);
-                match compare_node2(path2, config) {
+                match compare_node(path2, config) {
                     Some(x) => *v = x,
                     None => ()
                 }
