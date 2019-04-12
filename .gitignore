@@ -1,3 +1,5 @@
+docker-compose.yml-original
+docker-compose.yml.backup
 out.yml
 *.swp
 /target

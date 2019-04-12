@@ -6,9 +6,10 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 struct Opt {
-    dir: String,
     config: String,
     file: String,
+    is_rewrite: bool,
+    no_backup: bool,
 }
 
 #[derive(Debug)]
@@ -36,7 +37,6 @@ impl Do {
             let hash = i.as_hash().unwrap();
             let name = hash.get(&Yaml::from_str("name")).unwrap().as_str().unwrap();
             let v = hash.get(&Yaml::from_str("to")).unwrap().as_vec().unwrap().to_vec();
-            println!("Init: {:?}", v);
             wk.insert(name.to_owned(), v.clone());
         }
 
@@ -50,19 +50,28 @@ impl Do {
 fn main() {
     let matches = App::new("some")
         .arg_from_usage("-c, --config[config.yml] 'Use other config file'")
-        .arg_from_usage("-d, --dir[docker] 'Use directory'")
         .arg_from_usage("-f, --file[docker-compose.yml] 'Use that file as template, 4TEST'")
+        .arg_from_usage("-r, --rewrite 'Rewrite original'")
+        .arg_from_usage("-n, --no-backup 'Disable backup to *.backup'")
         .get_matches();
 
     let opt = Opt {
-        dir: value_t!(matches, "dir", String).unwrap_or("docker".to_string()),
         config: value_t!(matches, "config", String).unwrap_or("config.yml".to_string()),
         file: value_t!(matches, "file", String).unwrap_or("./docker-compose.yml".to_string()),
+        is_rewrite: match matches.is_present("rewrite") {
+            true => true,
+            _ => false,
+        },
+        no_backup: match matches.is_present("no-backup") {
+            true => true,
+            _ => false,
+        },
+
     };
 
     let mut config = Do::init(&opt.config);
 
-    let f_str = read_to_string(opt.file).unwrap();
+    let f_str = read_to_string(opt.file.clone()).unwrap();
     let docker_config = YamlLoader::load_from_str(&f_str).unwrap();
     let mut docker_c = docker_config[0].clone();
 
@@ -71,8 +80,19 @@ fn main() {
     let mut out_str = String::new();
     let mut emitter = YamlEmitter::new(&mut out_str);
     emitter.dump(&docker_c).unwrap();
-    let mut file = File::create("out.yml").unwrap();
-    file.write_all(&out_str.as_bytes()).unwrap();
+    match opt.is_rewrite {
+        true => {
+            if !opt.no_backup {
+                std::fs::rename(opt.file.clone(), format!("{}.backup", opt.file.clone())).expect("Can't backup");
+            }
+            let mut file = File::create(opt.file.clone()).unwrap();
+            file.write_all(&out_str.as_bytes()).unwrap();
+        },
+        false => {
+            let mut file = File::create("out.yml").unwrap();
+            file.write_all(&out_str.as_bytes()).unwrap();
+        }
+    }
 }
 
 fn compare_arr(cmp1: &Vec<String>, cmp2: &Vec<&str>) -> bool {
