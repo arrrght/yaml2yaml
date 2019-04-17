@@ -1,4 +1,4 @@
-use clap::{value_t, App};
+use clap::{values_t, value_t, App};
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 use yaml_rust::{yaml, Yaml, YamlEmitter, YamlLoader};
@@ -7,8 +7,9 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 struct Opt {
     config: String,
-    file: String,
-    is_rewrite: bool,
+    files: Vec<String>,
+    is_overwrite: bool,
+    is_ignore: bool,
     no_backup: bool,
 }
 
@@ -21,10 +22,11 @@ struct Do {
 impl Do {
     fn roulette(&mut self, v: String) -> Yaml {
         let arr = self.wk.get_mut(&v).unwrap();
+        arr.reverse();
         let some = arr.pop().unwrap();
         arr.reverse();
         arr.push(some.clone());
-        arr.reverse();
+        //arr.reverse();
         some
     }
     fn init(config_file_name: &str) -> Do {
@@ -48,17 +50,25 @@ impl Do {
 }
 
 fn main() {
-    let matches = App::new("some")
+    let matches = App::new("yaml2yaml")
+        .about(clap::crate_description!())
         .arg_from_usage("-c, --config[config.yml] 'Use other config file'")
-        .arg_from_usage("-f, --file[docker-compose.yml] 'Use that file as template, 4TEST'")
-        .arg_from_usage("-r, --rewrite 'Rewrite original'")
+        .arg_from_usage("-w, --overwrite 'Overwrite original'")
         .arg_from_usage("-n, --no-backup 'Disable backup to *.backup'")
+        .arg_from_usage("-i, --ignore 'Ignore not existent files'")
+        .arg_from_usage("<filename>... 'Files to convert'")
         .get_matches();
+
+    //println!("FNS: {:?}", values_t!(matches, "filename", String).unwrap());
 
     let opt = Opt {
         config: value_t!(matches, "config", String).unwrap_or("config.yml".to_string()),
-        file: value_t!(matches, "file", String).unwrap_or("./docker-compose.yml".to_string()),
-        is_rewrite: match matches.is_present("rewrite") {
+        files: values_t!(matches, "filename", String).unwrap(),
+        is_ignore: match matches.is_present("ignore") {
+            true => true,
+            _ => false,
+        },
+        is_overwrite: match matches.is_present("overwrite") {
             true => true,
             _ => false,
         },
@@ -71,26 +81,40 @@ fn main() {
 
     let mut config = Do::init(&opt.config);
 
-    let f_str = read_to_string(opt.file.clone()).unwrap();
-    let docker_config = YamlLoader::load_from_str(&f_str).unwrap();
-    let mut docker_c = docker_config[0].clone();
+    for filename in opt.files {
 
-    walk_node(&mut docker_c, Vec::new(), &mut config);
-
-    let mut out_str = String::new();
-    let mut emitter = YamlEmitter::new(&mut out_str);
-    emitter.dump(&docker_c).unwrap();
-    match opt.is_rewrite {
-        true => {
-            if !opt.no_backup {
-                std::fs::rename(opt.file.clone(), format!("{}.backup", opt.file.clone())).expect("Can't backup");
+        if !std::path::Path::new(&filename).exists() {
+            if opt.is_ignore {
+                println!("File {} not exists. Ignored.", filename);
+            }else{
+                println!("File {} is not exists. Program exit.", filename);
+                std::process::exit(1);
             }
-            let mut file = File::create(opt.file.clone()).unwrap();
-            file.write_all(&out_str.as_bytes()).unwrap();
-        },
-        false => {
-            let mut file = File::create("out.yml").unwrap();
-            file.write_all(&out_str.as_bytes()).unwrap();
+        }else{
+            let f_str = read_to_string(filename.clone()).unwrap();
+            let docker_config = YamlLoader::load_from_str(&f_str).unwrap();
+            let mut docker_c = docker_config[0].clone();
+
+
+            walk_node(&mut docker_c, Vec::new(), &mut config);
+
+            let mut out_str = String::new();
+            let mut emitter = YamlEmitter::new(&mut out_str);
+            emitter.dump(&docker_c).unwrap();
+            match opt.is_overwrite {
+                true => {
+                    if !opt.no_backup {
+                        std::fs::rename(filename.clone(), format!("{}.backup", filename.clone())).expect("Can't backup");
+                    }
+                    let mut file = File::create(filename.clone()).unwrap();
+                    file.write_all(&out_str.as_bytes()).unwrap();
+                },
+                false => {
+                    let mut file = File::create("out.yml").unwrap();
+                    file.write_all(&out_str.as_bytes()).unwrap();
+                }
+            }
+            println!("{} converted", filename);
         }
     }
 }

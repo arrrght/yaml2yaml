@@ -40,12 +40,12 @@ services:
       limits_rami_sage_module_max_limit: "9"
       log-level: info
       log_directory: /opt/logs
-      login_mindoo_mileage: user2
+      login_mindoo_mileage: user1
       mulct_token: sOoWFwgCjt9OplPZXZfDEgzUB9Tq
       mulct_url: "http://api.onesrv1.org/partner_fines/by_data"
       sage_token_invisible: "false"
       pageurl_srv1: "https://aa23.aa21.org/proxy/check/base"
-      password_mindoo_mileage: pass2
+      password_mindoo_mileage: pass1
       inv_hanle_version: v2_2019_03_15
       inv_use_google_module: "false"
       inv_use_proxy: torge
@@ -147,12 +147,12 @@ services:
       limits_rami_sage_module_max_limit: "9"
       log-level: info
       log_directory: /opt/logs
-      login_mindoo_mileage: user1
+      login_mindoo_mileage: user2
       mulct_token: sOoWFwgCjt9OplPZXZfDEgzUB9Tq
       mulct_url: "http://api.onlinesrv1.org/partner_fines/by_data"
       sage_token_invisible: "false"
       pageurl_srv1: "https://neenn.oggi.org/proxy/check/base"
-      password_mindoo_mileage: pass1
+      password_mindoo_mileage: pass2
       inv_hanle_version: v2_2019_03_15
       inv_use_google_module: "false"
       inv_use_proxy: torge
@@ -254,12 +254,12 @@ services:
       limits_rami_sage_module_max_limit: "9"
       log-level: info
       log_directory: /opt/logs
-      login_mindoo_mileage: user2
+      login_mindoo_mileage: user3
       mulct_token: sOoWFwgCjt9OplPZXZfDEgzUB9Tq
       mulct_url: "http://api.onlinesrv1.org/partner_fines/by_data"
       sage_token_invisible: "false"
       pageurl_srv1: "https://neenn.oggi.org/proxy/check/base"
-      password_mindoo_mileage: pass2
+      password_mindoo_mileage: pass3
       inv_use_google_module: "false"
       inv_use_proxy: torge
       proxy_ip: 195.154.161.111
@@ -456,12 +456,12 @@ services:
       limits_rami_sage_module_max_limit: "9"
       log-level: info
       log_directory: /opt/logs
-      login_mindoo_mileage: user1
+      login_mindoo_mileage: user4
       mulct_token: sOoWFwgCjt9OplPZXZfDEgzUB9Tq
       mulct_url: "http://api.onlinesrv1.org/partner_fines/by_data"
       sage_token_invisible: "false"
       pageurl_srv1: "https://neenn.oggi.org/proxy/check/base"
-      password_mindoo_mileage: pass1
+      password_mindoo_mileage: pass4
       inv_hanle_version: v2_2019_03_15
       inv_use_google_module: "false"
       inv_use_proxy: torge
@@ -563,12 +563,12 @@ services:
       limits_rami_sage_module_max_limit: "9"
       log-level: info
       log_directory: /opt/logs
-      login_mindoo_mileage: user2
+      login_mindoo_mileage: user5
       mulct_token: sOoWFwgCjt9OplPZXZfDEgzUB9Tq
       mulct_url: "http://api.onlinesrv1.org/partner_fines/by_data"
       sage_token_invisible: "false"
       pageurl_srv1: "https://neenn.oggi.org/proxy/check/base"
-      password_mindoo_mileage: pass2
+      password_mindoo_mileage: pass5
       inv_hanle_version: v2_2019_03_15
       inv_use_google_module: "false"
       inv_use_proxy: torge
