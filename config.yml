@@ -14,5 +14,7 @@ templates:
   template1: &template1
     - { name: "services/*/environment/login_mindoo_mileage", to: *worked, method: roulette, part: key }
     - { name: "services/*/environment/password_mindoo_mileage", to: *worked, method: roulette, part: val }
+  template2: &template2
+    - { name: "services/*/image", to: "S---tring", method: plain }
 
-default: *template1
+default: *template2

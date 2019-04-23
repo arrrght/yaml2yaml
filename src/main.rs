@@ -20,6 +20,9 @@ struct Do {
 }
 
 impl Do {
+    fn plain(&mut self, v: String) -> Yaml {
+        Yaml::from_str(&v)
+    }
     fn roulette(&mut self, v: String) -> Yaml {
         let arr = self.wk.get_mut(&v).unwrap();
         arr.reverse();
@@ -38,8 +41,21 @@ impl Do {
         for i in doc0.clone() {
             let hash = i.as_hash().unwrap();
             let name = hash.get(&Yaml::from_str("name")).unwrap().as_str().unwrap();
-            let v = hash.get(&Yaml::from_str("to")).unwrap().as_vec().unwrap().to_vec();
-            wk.insert(name.to_owned(), v.clone());
+            let method = hash.get(&Yaml::from_str("method")).unwrap().as_str();
+            match method {
+                Some("roulette") => {
+                    let v = hash.get(&Yaml::from_str("to")).unwrap().as_vec().unwrap().to_vec();
+                    wk.insert(name.to_owned(), v.clone());
+                },
+                Some("plain") => {
+                    let v = Yaml::from_str("NONE");
+                    wk.insert(name.to_owned(), vec!(v.clone()));
+                },
+                _ => {
+                    let v = Yaml::from_str("NONE");
+                    wk.insert(name.to_owned(), vec!(v.clone()));
+                }
+            };
         }
 
         Do {
@@ -141,18 +157,23 @@ fn compare_node(path: Vec<String>, config: &mut Do) -> Option<Yaml> {
         if compare_arr(&path, &s_arr) {
             let val = config.roulette(s_name);
             let method = h_name.get(&Yaml::String("method".to_string())).unwrap().clone();
-
-            if method.as_str() == Some("roulette") {
-                let part = h_name.get(&Yaml::from_str("part")).unwrap().as_str().unwrap();
-                let mut h = val.as_hash().unwrap().clone();
-                let first = h.entries().next().unwrap();
-                let ret = match part {
-                    "key" => first.key(),
-                    _ => first.get()
-                };
-                return Some(ret.clone());
+            return match method.as_str() {
+                Some("roulette") => {
+                    let part = h_name.get(&Yaml::from_str("part")).unwrap().as_str().unwrap();
+                    let mut h = val.as_hash().unwrap().clone();
+                    let first = h.entries().next().unwrap();
+                    let ret = match part {
+                        "key" => first.key(),
+                        _ => first.get()
+                    };
+                    Some(ret.clone())
+                },
+                Some("plain") => {
+                    let ret = h_name.get(&Yaml::from_str("to")).unwrap().clone();
+                    Some(ret)
+                },
+                _ => Some(val.clone())
             }
-            return Some(val.clone());
         }
     }
     None
